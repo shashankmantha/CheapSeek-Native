@@ -1,0 +1,18 @@
+out
+dist
+node_modules
+.vscode-test/
+*.vsix
+# Environment variables
+.env
+.env.local
+
+# VS Code workspace settings
+.vscode/settings.json
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

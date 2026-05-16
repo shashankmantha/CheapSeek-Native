@@ -1,0 +1,68 @@
+{
+  "name": "cheapseek",
+  "displayName": "CheapSeek",
+  "description": "Local Ollama / DeepSeek code assistant for VS Code",
+  "version": "0.0.1",
+  "publisher": "yshashank mantha",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onCommand:cheapseek.askCurrentFile",
+    "onCommand:cheapseek.clearOutput"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "cheapseek.askCurrentFile",
+        "title": "CheapSeek: Ask About Current File"
+      },
+      {
+        "command": "cheapseek.clearOutput",
+        "title": "CheapSeek: Clear Output"
+      }
+    ],
+    "configuration": {
+      "title": "CheapSeek",
+      "properties": {
+        "cheapseek.modelEndpoint": {
+          "type": "string",
+          "default": "http://localhost:11434/api/chat",
+          "description": "Ollama chat endpoint."
+        },
+        "cheapseek.modelName": {
+          "type": "string",
+          "default": "deepseek-r1:7b",
+          "description": "Ollama model name."
+        },
+        "cheapseek.maxCharsPerFile": {
+          "type": "number",
+          "default": 12000,
+          "description": "Maximum characters from the current file to send to the local model."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.90.0",
+    "@vscode/test-cli": "^0.0.9",
+    "@vscode/test-electron": "^2.4.0",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.5",
+    "typescript-eslint": "^8.59.2"
+  }
+}
