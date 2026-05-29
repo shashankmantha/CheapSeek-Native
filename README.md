@@ -1,71 +1,215 @@
-# cheapseek README
+# CheapSeek
 
-This is the README for your extension "cheapseek". After writing up a brief description, we recommend including the following sections.
+CheapSeek is a VS Code extension that connects your editor to a locally running LLM through Ollama.
 
-## Features
+The goal is to turn VS Code into a lightweight local code assistant that can inspect the current file, selected code, and eventually the whole workspace without sending your code to a cloud API.
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+CheapSeek is built as a local-first experiment using models like DeepSeek R1 through Ollama.
 
-For example if there is an image subfolder under your extension project workspace:
+## Current Features
 
-\!\[feature X\]\(images/feature-x.png\)
+- Ask a local LLM about the current open file
+- Send file contents to a local Ollama model
+- Display responses in a VS Code output panel
+- Configurable Ollama endpoint
+- Configurable model name
+- Configurable max characters per file
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+## Planned Features
+
+- Ask about selected code
+- Ask about the current workspace
+- Choose model size based on available hardware
+- Add model profiles such as 1.5B, 7B, 14B, and 32B
+- Add chunking for larger workspaces
+- Add a webview chat/dashboard
+- Optional diagnostics for AI-generated code review findings
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+CheapSeek requires Ollama to be installed and running locally.
 
-## Extension Settings
+Install Ollama:
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+```bash
 
-For example:
+https://ollama.com
 
-This extension contributes the following settings:
+Start Ollama:
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+ollama serve
 
-## Known Issues
+If Ollama is already running, you may see:
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+Error: listen tcp 127.0.0.1:11434: bind: address already in use
 
-## Release Notes
+That is okay. It means the Ollama server is already active.
 
-Users appreciate release notes as you update your extension.
+Pull a supported model:
 
-### 1.0.0
+ollama pull deepseek-r1:7b
 
-Initial release of ...
+Check installed models:
 
-### 1.0.1
+ollama list
 
-Fixed issue #.
+Default Model
 
-### 1.1.0
+CheapSeek currently defaults to:
 
-Added features X, Y, and Z.
+deepseek-r1:7b
 
----
+Default endpoint:
 
-## Following extension guidelines
+http://localhost:11434/api/chat
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
+You can change these in VS Code settings.
+Extension Settings
 
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+CheapSeek contributes the following settings:
 
-## Working with Markdown
+{
+  "cheapseek.modelEndpoint": "http://localhost:11434/api/chat",
+  "cheapseek.modelName": "deepseek-r1:7b",
+  "cheapseek.maxCharsPerFile": 12000
+}
 
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
+cheapseek.modelEndpoint
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
+The local Ollama chat API endpoint.
 
-## For more information
+Default:
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+http://localhost:11434/api/chat
 
-**Enjoy!**
+cheapseek.modelName
+
+The Ollama model CheapSeek should use.
+
+Example values:
+
+deepseek-r1:1.5b
+deepseek-r1:7b
+deepseek-r1:14b
+deepseek-r1:32b
+
+cheapseek.maxCharsPerFile
+
+The maximum number of characters CheapSeek sends from the current file to the local model.
+
+This helps avoid oversized prompts.
+Commands
+
+CheapSeek currently provides:
+
+CheapSeek: Ask About Current File
+CheapSeek: Clear Output
+
+Planned commands:
+
+CheapSeek: Ask About Selection
+CheapSeek: Ask About Workspace
+CheapSeek: Choose Local Model
+CheapSeek: Review Current File
+CheapSeek: Review Workspace
+
+Development
+
+Install dependencies:
+
+npm install
+
+Compile:
+
+npm run compile
+
+Watch mode:
+
+npm run watch
+
+Run the extension:
+
+    Open this project in VS Code.
+
+    Open the Run and Debug panel.
+
+    Select Run Extension.
+
+    Press the green play button.
+
+This opens a new Extension Development Host window.
+
+In that window, run:
+
+CheapSeek: Ask About Current File
+
+Project Structure
+
+Current structure:
+
+src/
+  extension.ts
+
+Planned structure:
+
+src/
+  extension.ts
+  types.ts
+
+  documents/
+    getActiveDocument.ts
+    getWorkspaceDocuments.ts
+    createFilePayload.ts
+    getSelectedText.ts
+
+  context/
+    buildCodeContext.ts
+
+  agent/
+    ollamaClient.ts
+    prompts.ts
+    modelProfiles.ts
+
+  ui/
+    output.ts
+    quickPick.ts
+
+Architecture
+
+CheapSeek is designed around a simple pipeline:
+
+VS Code command
+→ collect file or selection context
+→ build prompt
+→ send request to local Ollama model
+→ show answer in VS Code
+
+The long-term architecture is:
+
+Command layer:
+  What did the user ask CheapSeek to do?
+
+Document layer:
+  What files, selections, or workspace content should be included?
+
+Context layer:
+  How much code should be sent to the model?
+
+Agent layer:
+  How does CheapSeek talk to the local LLM?
+
+UI layer:
+  How should the answer be displayed?
+
+Local-First Goal
+
+CheapSeek is intended to keep source code local.
+
+The extension sends code context only to the configured local endpoint. By default, this is Ollama running on localhost.
+
+No cloud API is required for the default setup.
+Notes
+
+This project started as a simple TODO/FIXME scanner to learn how VS Code extensions interact with file data, diagnostics, and output panels.
+
+That scanner served as a precursor project. CheapSeek now focuses on using the same file-reading scaffolding to power a local LLM code assistant.
