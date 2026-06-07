@@ -1,252 +1,449 @@
-CheapSeek
+# CheapSeek Native
 
-CheapSeek is a VS Code extension that connects your editor to a locally running LLM (default is the deepseek R1) through Ollama .
+CheapSeek Native is a VS Code extension that connects your editor to a locally running LLM through a host-installed Ollama server.
 
-The goal is to turn VS Code into a lightweight local code assistant that can inspect the current file, selected code, and eventually the whole workspace without sending your code to a cloud API.
+The default model is currently `deepseek-r1:7b`.
 
-CheapSeek is built as a local-first experiment using models like DeepSeek R1 through Ollama.
-Current Features
+The goal of CheapSeek is to turn VS Code into a lightweight local code assistant that can inspect the current file, selected code, and eventually the whole workspace without sending your code to a cloud API.
 
-    Ask a local LLM about the current open file
-    Send file contents to a local Ollama model
-    Display responses in a VS Code output panel
-    Configurable Ollama endpoint
-    Configurable model name
-    Configurable max characters per file
+CheapSeek Native is the host-based version of the project. It expects Ollama to be installed and running directly on your machine.
 
-Planned Features
+A separate containerized version, **CheapSeek Containerized**, is planned for running Ollama inside Docker while still exposing the Ollama API to the extension.
 
-    Ask about selected code
-    Ask about the current workspace
-    Choose model size based on available hardware
-    Add model profiles such as 1.5B, 7B, 14B, and 32B
-    Add chunking for larger workspaces
-    Add a webview chat/dashboard
-    Optional diagnostics for AI-generated code review findings
+---
 
---------Requirements--------
+## Current Features
 
-CheapSeek requires Ollama to be installed and running locally.
+* Ask a local LLM about the current open file
+* Send file contents to a local Ollama model
+* Display responses in a VS Code output panel
+* Configure the Ollama endpoint
+* Configure the model name
+* Configure the maximum number of characters sent per file
 
- 1.) Install Ollama:
+---
 
+## Planned Features
+
+* Ask about selected code
+* Ask about the current workspace
+* Choose model size based on available hardware
+* Add model profiles such as `1.5B`, `7B`, `14B`, and `32B`
+* Add chunking for larger workspaces
+* Add a webview chat/dashboard
+* Optional diagnostics for AI-generated code review findings
+
+---
+
+## Requirements
+
+CheapSeek Native requires Ollama to be installed and running locally on your host machine.
+
+### 1. Install Ollama
+
+Install Ollama from:
+
+  ```text
   https://ollama.com
+  ```
 
-2.) Start Ollama:
+### 2. Start Ollama
 
+  ```bash
   ollama serve
-  
+  ```
 
 If Ollama is already running, you may see:
 
-    Error: listen tcp 127.0.0.1:11434: bind: address already in use
-  
+  ```text
+  Error: listen tcp 127.0.0.1:11434: bind: address already in use
+  ```
+
 That is okay. It means the Ollama server is already active.
 
+### 3. Pull a supported model
 
-3.) Pull a supported model: 
-( deepseek-r1 is the reccomended model for this project, model versions discussed in Extension Settings section ) 
+`deepseek-r1` is the recommended model line for this project.
 
-  ollama pull deepseek-r1:7b 
+  ```bash
+  ollama pull deepseek-r1:7b
+  ```
 
+Other supported examples include:
 
-4.) Check installed models:
+  ```bash
+  ollama pull deepseek-r1:1.5b
+  ollama pull deepseek-r1:14b
+  ollama pull deepseek-r1:32b
+  ```
 
+### 4. Check installed models
+
+  ```bash
   ollama list
+  ```
 
 If DeepSeek was installed successfully, you should see output similar to:
 
-    NAME              ID              SIZE      MODIFIED
-    deepseek-r1:7b    755ced02ce7b    4.7 GB    5 seconds ago
+  ```text
+  NAME              ID              SIZE      MODIFIED
+  deepseek-r1:7b    755ced02ce7b    4.7 GB    5 seconds ago
+  ```
 
 The exact `ID`, `SIZE`, and `MODIFIED` values may differ on your machine. The important part is that the `NAME` column includes:
 
-    deepseek-r1:7b
-
-
---------Default Model--------
-
-CheapSeek currently defaults to:
-
+  ```text
   deepseek-r1:7b
+  ```
+(or whichever model you chose to)
+---
+
+## Default Model
+
+CheapSeek Native currently defaults to:
+
+  ```text
+  deepseek-r1:7b
+  ```
 
 Default endpoint:
 
+  ```text
   http://localhost:11434/api/chat
+  ```
 
-(You can change these in VS Code settings.)
+You can change both values in VS Code settings.
 
+---
 
-
---------Extension Settings--------
+## Extension Settings
 
 CheapSeek contributes the following settings:
 
-  {
-    "cheapseek.modelEndpoint": "http://localhost:11434/api/chat",
-    "cheapseek.modelName": "deepseek-r1:7b",
-    "cheapseek.maxCharsPerFile": 12000
-  }
+```json
+{
+  "cheapseek.modelEndpoint": "http://localhost:11434/api/chat",
+  "cheapseek.modelName": "deepseek-r1:7b",
+  "cheapseek.maxCharsPerFile": 12000
+}
+```
 
+### `cheapseek.modelEndpoint`
 
+The local Ollama chat API endpoint.
 
-- cheapseek.modelEndpoint: The local Ollama chat API endpoint.
+Default:
 
-  Default: http://localhost:11434/api/chat
+  ```text
+  http://localhost:11434/api/chat
+  ```
 
-- cheapseek.maxCharsPerFile: The maximum number of characters CheapSeek sends from the current file to the local model. helps avoid oversized prompts.
+### `cheapseek.modelName`
 
-- cheapseek.modelName: The Ollama model CheapSeek should use.
+The Ollama model CheapSeek should use.
 
-  Example values:
+Default:
 
-    deepseek-r1:1.5b
-    deepseek-r1:7b
-    deepseek-r1:14b
-    deepseek-r1:32b
+  ```text
+  deepseek-r1:7b
+  ```
 
-  Based on your current hardware specs, if you are unsure which one you should run start at the 1.5b partition and work your way up. 
+Example values:
 
--------- Hardware Guide -------
-Local model performance depends heavily on available RAM, VRAM, CPU, and whether the model is running on GPU or CPU. These are rough guidelines, not strict requirements. 
+  ```text
+  deepseek-r1:1.5b
+  deepseek-r1:7b
+  deepseek-r1:14b
+  deepseek-r1:32b
+  ```
 
-    deepseek-r1:1.5b
-      Recommended RAM: 8 GB+
-      Best for: low-end laptops, quick questions, small files
-      Notes: fastest option, but weaker reasoning
+If you are unsure which model to run, start with `deepseek-r1:1.5b` and work your way up based on your machine's performance. A breif hardware guide is included in the next section
 
-    deepseek-r1:7b
-      Recommended RAM: 16 GB+
-      Best for: general local coding help, current-file questions, selected-code explanations
-      Notes: good balance of speed and quality
+### `cheapseek.maxCharsPerFile`
 
-    deepseek-r1:14b
-      Recommended RAM: 32 GB+
-      Best for: deeper code review, larger files, better reasoning
-      Notes: slower than 7B and may feel heavy on laptops
+The maximum number of characters CheapSeek sends from the current file to the local model.
 
-    deepseek-r1:32b
-      Recommended RAM: 64 GB+
-      Best for: stronger local reasoning and more complex workspace analysis
-      Notes: much slower without a strong GPU
+Default:
 
-This project was made with the deepseek-r1 model line in mind but can run with other models if u so please
---------Commands--------
+  ```text
+  12000
+  ```
 
-CheapSeek currently provides:
+This helps avoid oversized prompts and keeps responses faster.
 
+---
+
+## Hardware Guide
+
+Local model performance depends heavily on available RAM, VRAM, CPU, and whether the model is running on GPU or CPU.
+
+These are rough guidelines, not strict requirements.
+
+### `deepseek-r1:1.5b`
+
+Recommended RAM:
+
+  ```text
+  8 GB+
+  ```
+
+Best for:
+
+```text
+Low-end laptops, quick questions, and small files
+```
+
+Notes:
+
+```text
+Fastest option, but weaker reasoning.
+```
+
+### `deepseek-r1:7b`
+
+Recommended RAM:
+
+```text
+16 GB+
+```
+
+Best for:
+
+```text
+General local coding help, current-file questions, and selected-code explanations
+```
+
+Notes:
+
+```text
+Good balance of speed and quality.
+```
+
+### `deepseek-r1:14b`
+
+Recommended RAM:
+
+```text
+32 GB+
+```
+
+Best for:
+
+```text
+Deeper code review, larger files, and better reasoning
+```
+
+Notes:
+
+```text
+Slower than 7B and may feel heavy on laptops.
+```
+
+### `deepseek-r1:32b`
+
+Recommended RAM:
+
+```text
+64 GB+
+```
+
+Best for:
+
+```text
+Stronger local reasoning and more complex workspace analysis
+```
+
+Notes:
+
+```text
+Much slower without a strong GPU.
+```
+
+CheapSeek was built with the `deepseek-r1` model line in mind, but it can run with other Ollama-compatible models.
+
+---
+
+## Commands
+
+CheapSeek currently provides the following commands:
+
+```text
 CheapSeek: Ask About Current File
 CheapSeek: Clear Output
+```
 
 Planned commands:
 
+```text
 CheapSeek: Ask About Selection
 CheapSeek: Ask About Workspace
 CheapSeek: Choose Local Model
 CheapSeek: Review Current File
 CheapSeek: Review Workspace
+```
 
---------Development--------
+---
 
-1.) Install dependencies:
+## Development
 
-  npm install
+### 1. Install dependencies
 
-2.) Compile:
+```bash
+npm install
+```
 
-  npm run compile
+### 2. Compile
 
-3.) Watch mode:
+```bash
+npm run compile
+```
 
-  npm run watch
+### 3. Watch mode
 
-4.) Run the extension:
+```bash
+npm run watch
+```
 
-    - Open this project in VS Code.
+### 4. Run the extension
 
-    - Open the Run and Debug panel.
+Open this project in VS Code.
 
-    - Select Run Extension.
+Then:
 
-    - Press the green play button.
+1. Open the **Run and Debug** panel.
+2. Select **Run Extension**.
+3. Press the green play button.
 
-(This opens a new Extension Development Host window.)
+This opens a new **Extension Development Host** window.
 
-5.) In that window, run:
+### 5. Run a CheapSeek command
 
-  CheapSeek: Ask About Current File
+In the Extension Development Host window, run:
 
+```text
+CheapSeek: Ask About Current File
+```
 
+---
 
---------Project Structure--------
+## Project Structure
 
 Current structure:
 
-  src/
-    extension.ts
+```text
+src/
+  extension.ts
+```
 
 Planned structure:
 
-  src/
-    extension.ts
-    types.ts
+```text
+src/
+  extension.ts
+  types.ts
 
-    documents/
-      getActiveDocument.ts
-      getWorkspaceDocuments.ts
-      createFilePayload.ts
-      getSelectedText.ts
+documents/
+  getActiveDocument.ts
+  getWorkspaceDocuments.ts
+  createFilePayload.ts
+  getSelectedText.ts
 
-    context/
-      buildCodeContext.ts
+context/
+  buildCodeContext.ts
 
-    agent/
-      ollamaClient.ts
-      prompts.ts
-      modelProfiles.ts
+agent/
+  ollamaClient.ts
+  prompts.ts
+  modelProfiles.ts
 
-    ui/
-      output.ts
-      quickPick.ts
+ui/
+  output.ts
+  quickPick.ts
+```
 
---------Architecture--------
+---
+
+## Architecture
 
 CheapSeek is designed around a simple pipeline:
 
+```text
 VS Code command
-→ collect file or selection context
-→ build prompt
-→ send request to local Ollama model
-→ show answer in VS Code
+  -> collect file or selection context
+  -> build prompt
+  -> send request to local Ollama model
+  -> show answer in VS Code
+```
 
-The long-term architecture is:
+The long-term architecture is split into five layers:
 
-Command layer:
-  What did the user ask CheapSeek to do?
+### Command Layer
 
-Document layer:
-  What files, selections, or workspace content should be included?
+Determines what the user asked CheapSeek to do.
 
-Context layer:
-  How much code should be sent to the model?
+Examples:
 
-Agent layer:
-  How does CheapSeek talk to the local LLM?
+```text
+Ask about current file
+Ask about selected code
+Ask about workspace
+Review current file
+```
 
-UI layer:
-  How should the answer be displayed?
+### Document Layer
 
---------Local-First Goal--------
+Determines which files, selections, or workspace content should be included.
 
-CheapSeek is intended to keep source code local.
+### Context Layer
 
-The extension sends code context only to the configured local endpoint. By default, this is Ollama running on localhost.
+Controls how much code should be sent to the model and how that code should be formatted.
+
+### Agent Layer
+
+Handles communication with the local LLM through the Ollama API.
+
+### UI Layer
+
+Controls how answers are displayed inside VS Code.
+
+---
+
+## Local-First Goal
+
+CheapSeek Native is intended to keep source code local.
+
+The extension sends code context only to the configured local endpoint. By default, this is Ollama running on:
+
+```text
+localhost:11434
+```
 
 No cloud API is required for the default setup.
 
-Notes: 
+---
+
+## CheapSeek Native vs CheapSeek Containerized
+
+CheapSeek is planned to have two local-first deployment options:
+
+### CheapSeek Native
+
+Runs against an Ollama server installed directly on the host machine.
+
+This version is best if you already use Ollama locally or want full control over your Ollama installation.
+
+### CheapSeek Containerized
+
+Runs against an Ollama server inside a Docker container.
+
+This version is intended to make setup more portable and reproducible while still keeping the model runtime local.
+
+Both versions communicate with Ollama through the Ollama API.
+
+---
+
+## Notes
 
 This project started as a simple TODO/FIXME scanner to learn how VS Code extensions interact with file data, diagnostics, and output panels.
 
-That scanner served as a precursor project. CheapSeek now focuses on using the same file-reading scaffolding to power a local LLM code assistant.
-
+That scanner served as a precursor project. CheapSeek now uses the same file-reading scaffolding to power a local LLM code assistant.
