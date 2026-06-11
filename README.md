@@ -95,7 +95,8 @@ The exact `ID`, `SIZE`, and `MODIFIED` values may differ on your machine. The im
   ```text
   deepseek-r1:7b
   ```
-(or whichever model you chose to)
+(or whichever model you chose)
+
 ---
 
 ## Default Model

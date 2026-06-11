@@ -12,6 +12,7 @@
   ],
   "main": "./out/extension.js",
   "activationEvents": [
+    "onCommand:cheapseek.openChat",
     "onCommand:cheapseek.askCurrentFile",
     "onCommand:cheapseek.clearOutput"
   ],
@@ -24,6 +25,10 @@
       {
         "command": "cheapseek.clearOutput",
         "title": "CheapSeek: Clear Output"
+      },
+      {
+        "command": "cheapseek.openChat",
+        "title": "CheapSeek: Open Chat Panel"
       }
     ],
     "configuration": {
