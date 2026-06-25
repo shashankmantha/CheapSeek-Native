@@ -55,6 +55,7 @@ export function getChatWebviewHtml(): string {
 			display: flex;
 			gap: 8px;
 			margin-top: 12px;
+			flex-wrap: wrap;
 		}
 
 		button {
@@ -77,6 +78,36 @@ export function getChatWebviewHtml(): string {
 
 		button.secondary:hover {
 			background-color: var(--vscode-button-secondaryHoverBackground);
+		}
+
+		.mode-row {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			margin-bottom: 12px;
+			flex-wrap: wrap;
+		}
+
+		.mode-label {
+			font-size: 12px;
+			text-transform: uppercase;
+			letter-spacing: 0.06em;
+			color: var(--vscode-descriptionForeground);
+		}
+
+		.mode-option {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			font-size: 13px;
+			color: var(--vscode-foreground);
+			cursor: pointer;
+			font-weight: 400;
+			margin-bottom: 0;
+		}
+
+		.mode-option input {
+			margin: 0;
 		}
 
 		.meta {
@@ -124,34 +155,47 @@ export function getChatWebviewHtml(): string {
 			color: var(--vscode-descriptionForeground);
 			font-style: italic;
 		}
-
 	</style>
 </head>
 <body>
 	<h1>CheapSeek</h1>
-		<div class="subtitle">Local code assistant powered by Ollama.</div>
+	<div class="subtitle">Local code assistant powered by Ollama.</div>
 
-		<div class="card context-card">
-			<div class="context-title">Current Context</div>
-			<div id="workspaceContext">Workspace: Not loaded yet</div>
-			<div id="fileContext">File: Not loaded yet</div>
-			<div id="modelContext">Model: Not loaded yet</div>
+	<div class="card context-card">
+		<div class="context-title">Current Context</div>
+		<div id="workspaceContext">Workspace: Not loaded yet</div>
+		<div id="fileContext">File: Not loaded yet</div>
+		<div id="modelContext">Model: Not loaded yet</div>
 
-			<div class="context-help">
-				If the file shown here does not match your current editor tab, click Refresh Context.
-			</div>
-			
-			<div class="actions">
-				<button id="refreshContextButton" class="secondary">Refresh Context</button>
-			</div>
+		<div class="context-help">
+			If the file shown here does not match your current editor tab, click Refresh Context.
 		</div>
+		
+		<div class="actions">
+			<button id="refreshContextButton" class="secondary">Refresh Context</button>
+		</div>
+	</div>
 
 	<div class="card">
-		<label for="question">Ask about the current file</label>
+		<div class="mode-row">
+			<span class="mode-label">Context</span>
+
+			<label class="mode-option">
+				<input type="radio" name="askMode" value="file" checked />
+				Current File
+			</label>
+
+			<label class="mode-option">
+				<input type="radio" name="askMode" value="workspace" />
+				Workspace
+			</label>
+		</div>
+
+		<label for="question">Ask CheapSeek</label>
 		<textarea id="question" placeholder="Example: What does this file do?"></textarea>
 
 		<div class="actions">
-			<button id="askButton">Ask Current File</button>
+			<button id="askButton">Ask CheapSeek</button>
 			<button id="clearButton" class="secondary">Clear</button>
 		</div>
 	</div>
@@ -176,8 +220,23 @@ export function getChatWebviewHtml(): string {
 		const modelContext = document.getElementById('modelContext');
 		const refreshContextButton = document.getElementById('refreshContextButton');
 
-		clearButton.addEventListener('click', () => {
+		function getSelectedMode() {
+			return document.querySelector('input[name="askMode"]:checked')?.value ?? 'file';
+		}
 
+		function updatePlaceholderForMode() {
+			const selectedMode = getSelectedMode();
+
+			question.placeholder = selectedMode === 'workspace'
+				? 'Example: What does this project do?'
+				: 'Example: What does this file do?';
+		}
+
+		document.querySelectorAll('input[name="askMode"]').forEach((input) => {
+			input.addEventListener('change', updatePlaceholderForMode);
+		});
+
+		clearButton.addEventListener('click', () => {
 			question.value = '';
 			status.textContent = 'Ready.';
 			status.className = 'status';
@@ -211,17 +270,25 @@ export function getChatWebviewHtml(): string {
 				return;
 			}
 
-			status.textContent = 'Thinking locally...';
+			const selectedMode = getSelectedMode();
+			const command = selectedMode === 'workspace' ? 'askWorkspace' : 'askCurrentFile';
+
+			status.textContent = selectedMode === 'workspace'
+				? 'Collecting workspace context...'
+				: 'Thinking locally...';
+
 			status.className = 'status';
 			meta.textContent = '';
-			answer.textContent = 'Thinking locally...';
+
+			answer.textContent = selectedMode === 'workspace'
+				? 'Collecting workspace context and thinking locally...'
+				: 'Thinking locally...';
 
 			vscode.postMessage({
-				command: 'askCurrentFile',
+				command,
 				question: text,
 			});
 		});
-
 
 		window.addEventListener('message', event => {
 			const message = event.data;
@@ -236,7 +303,6 @@ export function getChatWebviewHtml(): string {
 			}
 
 			if (message.command === 'thinking') {
-
 				status.textContent = message.text;
 				status.className = 'status';
 				meta.textContent = '';
@@ -245,7 +311,7 @@ export function getChatWebviewHtml(): string {
 				fileContext.textContent = 'File: ' + (message.file || 'Unknown');
 				modelContext.textContent = 'Model: ' + (message.model || 'Unknown');
 
-				answer.textContent = 'Thinking locally...';
+				answer.textContent = message.text || 'Thinking locally...';
 			}
 
 			if (message.command === 'answer') {
@@ -267,7 +333,6 @@ export function getChatWebviewHtml(): string {
 			}
 
 			if (message.command === 'clear') {
-
 				status.textContent = 'Ready.';
 				status.className = 'status';
 				meta.textContent = '';
@@ -277,8 +342,9 @@ export function getChatWebviewHtml(): string {
 				fileContext.textContent = 'File: Not loaded yet';
 				modelContext.textContent = 'Model: Not loaded yet';
 			}
-				
 		});
+
+		updatePlaceholderForMode();
 	</script>
 </body>
 </html>
