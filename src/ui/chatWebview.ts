@@ -155,6 +155,68 @@ export function getChatWebviewHtml(): string {
 			color: var(--vscode-descriptionForeground);
 			font-style: italic;
 		}
+
+		.history-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			gap: 12px;
+			margin-bottom: 12px;
+		}
+
+		.history-subtitle {
+			font-size: 12px;
+			color: var(--vscode-descriptionForeground);
+			margin-top: 2px;
+		}
+
+		.history-list {
+			max-height: 360px;
+			overflow-y: auto;
+			border: 1px solid var(--vscode-panel-border);
+			border-radius: 6px;
+			padding: 10px;
+			background-color: var(--vscode-editor-background);
+		}
+
+		.history-empty {
+			color: var(--vscode-descriptionForeground);
+			font-style: italic;
+			font-size: 13px;
+		}
+
+		.history-item {
+			border-bottom: 1px solid var(--vscode-panel-border);
+			padding: 10px 0;
+		}
+
+		.history-item:last-child {
+			border-bottom: none;
+		}
+
+		.history-meta {
+			font-size: 12px;
+			color: var(--vscode-descriptionForeground);
+			margin-bottom: 6px;
+		}
+
+		.history-question {
+			font-weight: 700;
+			margin-bottom: 6px;
+		}
+
+		.history-answer {
+			white-space: pre-wrap;
+			word-wrap: break-word;
+			font-size: 13px;
+			line-height: 1.45;
+			color: var(--vscode-foreground);
+			background-color: var(--vscode-textCodeBlock-background);
+			padding: 8px;
+			border-radius: 4px;
+			max-height: 180px;
+			overflow-y: auto;
+		}
 	</style>
 </head>
 <body>
@@ -206,6 +268,21 @@ export function getChatWebviewHtml(): string {
 		<pre id="answer">Ask a question to get started.</pre>
 	</div>
 
+	<div class="card">
+		<div class="history-header">
+			<div>
+				<div class="context-title">Chat History</div>
+				<div class="history-subtitle">Previous CheapSeek questions and replies for this workspace.</div>
+			</div>
+
+			<button id="refreshHistoryButton" class="secondary">Refresh History</button>
+		</div>
+
+		<div id="historyList" class="history-list">
+			<div class="history-empty">No previous chats yet.</div>
+		</div>
+	</div>
+
 	<script>
 		const vscode = acquireVsCodeApi();
 
@@ -219,9 +296,12 @@ export function getChatWebviewHtml(): string {
 		const fileContext = document.getElementById('fileContext');
 		const modelContext = document.getElementById('modelContext');
 		const refreshContextButton = document.getElementById('refreshContextButton');
+		const historyList = document.getElementById('historyList');
+		const refreshHistoryButton = document.getElementById('refreshHistoryButton');
 
 		function getSelectedMode() {
-			return document.querySelector('input[name="askMode"]:checked')?.value ?? 'file';
+			const selectedInput = document.querySelector('input[name="askMode"]:checked');
+			return selectedInput ? selectedInput.value : 'file';
 		}
 
 		function updatePlaceholderForMode() {
@@ -230,6 +310,56 @@ export function getChatWebviewHtml(): string {
 			question.placeholder = selectedMode === 'workspace'
 				? 'Example: What does this project do?'
 				: 'Example: What does this file do?';
+		}
+
+		function clearElement(element) {
+			while (element.firstChild) {
+				element.removeChild(element.firstChild);
+			}
+		}
+
+		function renderHistory(history) {
+			clearElement(historyList);
+
+			if (!Array.isArray(history) || history.length === 0) {
+				const empty = document.createElement('div');
+				empty.className = 'history-empty';
+				empty.textContent = 'No previous chats yet.';
+				historyList.appendChild(empty);
+				return;
+			}
+
+			const reversedHistory = history.slice().reverse();
+
+			reversedHistory.forEach((turn) => {
+				const item = document.createElement('div');
+				item.className = 'history-item';
+
+				const createdAt = turn.createdAt
+					? new Date(turn.createdAt).toLocaleString()
+					: 'Unknown time';
+
+				const scope = turn.scope || 'unknown';
+				const file = turn.file || 'N/A';
+
+				const historyMeta = document.createElement('div');
+				historyMeta.className = 'history-meta';
+				historyMeta.textContent = scope + ' - ' + file + ' - ' + createdAt;
+
+				const historyQuestion = document.createElement('div');
+				historyQuestion.className = 'history-question';
+				historyQuestion.textContent = 'Q: ' + (turn.question || '');
+
+				const historyAnswer = document.createElement('div');
+				historyAnswer.className = 'history-answer';
+				historyAnswer.textContent = turn.answer || '';
+
+				item.appendChild(historyMeta);
+				item.appendChild(historyQuestion);
+				item.appendChild(historyAnswer);
+
+				historyList.appendChild(item);
+			});
 		}
 
 		document.querySelectorAll('input[name="askMode"]').forEach((input) => {
@@ -258,6 +388,12 @@ export function getChatWebviewHtml(): string {
 
 			vscode.postMessage({
 				command: 'refreshContext',
+			});
+		});
+
+		refreshHistoryButton.addEventListener('click', () => {
+			vscode.postMessage({
+				command: 'refreshHistory',
 			});
 		});
 
@@ -292,6 +428,10 @@ export function getChatWebviewHtml(): string {
 
 		window.addEventListener('message', event => {
 			const message = event.data;
+
+			if (message.command === 'history') {
+				renderHistory(message.history);
+			}
 
 			if (message.command === 'context') {
 				workspaceContext.textContent = 'Workspace: ' + (message.workspace || 'Unknown');

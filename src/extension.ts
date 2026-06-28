@@ -73,14 +73,30 @@ export function activate(context: vscode.ExtensionContext) {
 				});
 			};
 
+			const postChatHistory = () => {
+				const history = getChatHistory(context);
+
+				panel.webview.postMessage({
+					command: 'history',
+					history,
+				});
+			};
+
 			panel.webview.html = getChatWebviewHtml();
 
 			setTimeout(postCurrentContext, 100);
+
+			setTimeout(postChatHistory, 150);
 
 			panel.webview.onDidReceiveMessage(
 				async (message) => {
 					if (message.command === 'refreshContext') {
 						postCurrentContext();
+						return;
+					}
+
+					if (message.command === 'refreshHistory') {
+						postChatHistory();
 						return;
 					}
 
@@ -135,6 +151,8 @@ export function activate(context: vscode.ExtensionContext) {
 								answer,
 								file: payload.relativePath,
 							});
+
+							postChatHistory();
 
 							panel.webview.postMessage({
 								command: 'answer',
@@ -209,6 +227,8 @@ export function activate(context: vscode.ExtensionContext) {
 								answer,
 								file: `${payloads.length} files included`,
 							});
+
+							postChatHistory();
 
 							panel.webview.postMessage({
 								command: 'answer',
@@ -293,6 +313,8 @@ export function activate(context: vscode.ExtensionContext) {
 					answer,
 					file: payload.relativePath,
 				});
+
+			
 
 				output.clear();
 				output.show(true);
