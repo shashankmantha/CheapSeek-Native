@@ -217,6 +217,17 @@ export function getChatWebviewHtml(): string {
 			max-height: 180px;
 			overflow-y: auto;
 		}
+
+		.chat-select {
+			width: 100%;
+			box-sizing: border-box;
+			padding: 8px;
+			color: var(--vscode-dropdown-foreground);
+			background-color: var(--vscode-dropdown-background);
+			border: 1px solid var(--vscode-dropdown-border);
+			border-radius: 4px;
+		}
+
 	</style>
 </head>
 <body>
@@ -253,6 +264,22 @@ export function getChatWebviewHtml(): string {
 			</label>
 		</div>
 
+
+		<div class="card">
+			<div class="history-header">
+				<div>
+					<div class="context-title">Chats</div>
+					<div class="history-subtitle">Start fresh when context gets too large.</div>
+				</div>
+
+				<button id="newChatButton" class="secondary">New Chat</button>
+			</div>
+
+			<select id="chatSessionSelect" class="chat-select">
+				<option value="">Loading chats...</option>
+			</select>
+		</div>
+
 		<label for="question">Ask CheapSeek</label>
 		<textarea id="question" placeholder="Example: What does this file do?"></textarea>
 
@@ -276,6 +303,7 @@ export function getChatWebviewHtml(): string {
 			</div>
 
 			<button id="refreshHistoryButton" class="secondary">Refresh History</button>
+			
 		</div>
 
 		<div id="historyList" class="history-list">
@@ -298,6 +326,8 @@ export function getChatWebviewHtml(): string {
 		const refreshContextButton = document.getElementById('refreshContextButton');
 		const historyList = document.getElementById('historyList');
 		const refreshHistoryButton = document.getElementById('refreshHistoryButton');
+		const newChatButton = document.getElementById('newChatButton');
+		const chatSessionSelect = document.getElementById('chatSessionSelect');
 
 		function getSelectedMode() {
 			const selectedInput = document.querySelector('input[name="askMode"]:checked');
@@ -362,6 +392,32 @@ export function getChatWebviewHtml(): string {
 			});
 		}
 
+		function renderChatSessions(sessions, activeSessionId) {
+			clearElement(chatSessionSelect);
+
+			if (!Array.isArray(sessions) || sessions.length === 0) {
+				const option = document.createElement('option');
+				option.value = '';
+				option.textContent = 'No chats yet';
+				chatSessionSelect.appendChild(option);
+				return;
+			}
+
+			sessions.slice().reverse().forEach((session) => {
+				const option = document.createElement('option');
+				option.value = session.id;
+
+				const turnCount = Array.isArray(session.turns) ? session.turns.length : 0;
+				option.textContent = session.title + ' (' + turnCount + ')';
+
+				if (session.id === activeSessionId) {
+					option.selected = true;
+				}
+
+				chatSessionSelect.appendChild(option);
+			});
+		}
+
 		document.querySelectorAll('input[name="askMode"]').forEach((input) => {
 			input.addEventListener('change', updatePlaceholderForMode);
 		});
@@ -397,6 +453,25 @@ export function getChatWebviewHtml(): string {
 			});
 		});
 
+		newChatButton.addEventListener('click', () => {
+			vscode.postMessage({
+				command: 'newChatSession',
+			});
+		});
+
+		chatSessionSelect.addEventListener('change', () => {
+			const sessionId = chatSessionSelect.value;
+
+			if (!sessionId) {
+				return;
+			}
+
+			vscode.postMessage({
+				command: 'switchChatSession',
+				sessionId,
+			});
+		});
+
 		askButton.addEventListener('click', () => {
 			const text = question.value.trim();
 
@@ -428,6 +503,17 @@ export function getChatWebviewHtml(): string {
 
 		window.addEventListener('message', event => {
 			const message = event.data;
+
+			if (message.command === 'chatSessions') {
+				renderChatSessions(message.sessions, message.activeSessionId);
+			}
+
+			if (message.command === 'clearAnswerOnly') {
+				status.textContent = 'Ready.';
+				status.className = 'status';
+				meta.textContent = '';
+				answer.textContent = 'Ask a question to get started.';
+			}
 
 			if (message.command === 'history') {
 				renderHistory(message.history);

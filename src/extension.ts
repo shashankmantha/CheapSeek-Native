@@ -9,8 +9,12 @@ import { getChatWebviewHtml } from './ui/chatWebview';
 
 import {
 	addChatTurn,
+	createNewChatSession,
 	formatChatHistoryForPrompt,
+	getActiveChatSession,
 	getChatHistory,
+	getChatSessions,
+	switchChatSession,
 } from './memory/chatHistory';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -82,11 +86,24 @@ export function activate(context: vscode.ExtensionContext) {
 				});
 			};
 
+			const postChatSessions = () => {
+				const sessions = getChatSessions(context);
+				const activeSession = getActiveChatSession(context);
+
+				panel.webview.postMessage({
+					command: 'chatSessions',
+					sessions,
+					activeSessionId: activeSession?.id,
+				});
+			};
+
 			panel.webview.html = getChatWebviewHtml();
 
 			setTimeout(postCurrentContext, 100);
 
 			setTimeout(postChatHistory, 150);
+
+			setTimeout(postChatSessions, 200);
 
 			panel.webview.onDidReceiveMessage(
 				async (message) => {
@@ -97,6 +114,37 @@ export function activate(context: vscode.ExtensionContext) {
 
 					if (message.command === 'refreshHistory') {
 						postChatHistory();
+						postChatSessions();
+						return;
+					}
+
+					if (message.command === 'newChatSession') {
+						await createNewChatSession(context);
+						postChatSessions();
+						postChatHistory();
+
+						panel.webview.postMessage({
+							command: 'clear',
+						});
+
+						return;
+					}
+
+					if (message.command === 'switchChatSession') {
+						const sessionId = String(message.sessionId ?? '');
+
+						if (!sessionId) {
+							return;
+						}
+
+						await switchChatSession(context, sessionId);
+						postChatSessions();
+						postChatHistory();
+
+						panel.webview.postMessage({
+							command: 'clearAnswerOnly',
+						});
+
 						return;
 					}
 
@@ -153,6 +201,7 @@ export function activate(context: vscode.ExtensionContext) {
 							});
 
 							postChatHistory();
+							postChatSessions();
 
 							panel.webview.postMessage({
 								command: 'answer',
@@ -229,6 +278,7 @@ export function activate(context: vscode.ExtensionContext) {
 							});
 
 							postChatHistory();
+							postChatSessions();
 
 							panel.webview.postMessage({
 								command: 'answer',
