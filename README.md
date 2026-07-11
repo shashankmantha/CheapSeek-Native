@@ -54,56 +54,84 @@ Install Ollama from:
 
 ```text
 https://ollama.com
-2. Start Ollama
+```
+
+### 2. Start Ollama
+
+```bash
 ollama serve
+```
 
 If Ollama is already running, you may see:
 
+```text
 Error: listen tcp 127.0.0.1:11434: bind: address already in use
+```
 
 That is okay. It means the Ollama server is already active.
 
-3. Pull a supported model
+### 3. Pull a supported model
 
-deepseek-r1 is the recommended model line for this project.
+`deepseek-r1` is the recommended model line for this project.
 
+```bash
 ollama pull deepseek-r1:7b
+```
 
 Other supported examples include:
 
+```bash
 ollama pull deepseek-r1:1.5b
 ollama pull deepseek-r1:14b
 ollama pull deepseek-r1:32b
-4. Check installed models
+```
+
+### 4. Check installed models
+
+```bash
 ollama list
+```
 
 If DeepSeek was installed successfully, you should see output similar to:
 
+```text
 NAME              ID              SIZE      MODIFIED
 deepseek-r1:7b    755ced02ce7b    4.7 GB    5 seconds ago
+```
 
-The exact ID, SIZE, and MODIFIED values may differ on your machine. The important part is that the NAME column includes:
+The exact `ID`, `SIZE`, and `MODIFIED` values may differ on your machine. The important part is that the `NAME` column includes:
 
+```text
 deepseek-r1:7b
+```
 
 or whichever model you chose.
 
-Default Model
+---
+
+## Default Model
 
 CheapSeek Native currently defaults to:
 
+```text
 deepseek-r1:7b
+```
 
 Default endpoint:
 
+```text
 http://localhost:11434/api/chat
+```
 
 You can change both values in VS Code settings.
 
-Extension Settings
+---
+
+## Extension Settings
 
 CheapSeek contributes the following settings:
 
+```json
 {
   "cheapseek.modelEndpoint": "http://localhost:11434/api/chat",
   "cheapseek.modelName": "deepseek-r1:7b",
@@ -111,134 +139,184 @@ CheapSeek contributes the following settings:
   "cheapseek.maxWorkspaceFiles": 20,
   "cheapseek.maxTotalWorkspaceChars": 80000
 }
-cheapseek.modelEndpoint
+```
+
+### `cheapseek.modelEndpoint`
 
 The local Ollama chat API endpoint.
 
 Default:
 
+```text
 http://localhost:11434/api/chat
-cheapseek.modelName
+```
+
+### `cheapseek.modelName`
 
 The Ollama model CheapSeek should use.
 
 Default:
 
+```text
 deepseek-r1:7b
+```
 
 Example values:
 
+```text
 deepseek-r1:1.5b
 deepseek-r1:7b
 deepseek-r1:14b
 deepseek-r1:32b
+```
 
-If you are unsure which model to run, start with deepseek-r1:1.5b and work your way up based on your machine's performance. A brief hardware guide is included below.
+If you are unsure which model to run, start with `deepseek-r1:1.5b` and work your way up based on your machine's performance. A brief hardware guide is included below.
 
-cheapseek.maxCharsPerFile
+### `cheapseek.maxCharsPerFile`
 
 The maximum number of characters CheapSeek sends from a single file to the local model.
 
 Default:
 
+```text
 12000
+```
 
 This helps avoid oversized prompts and keeps responses faster.
 
-cheapseek.maxWorkspaceFiles
+### `cheapseek.maxWorkspaceFiles`
 
 The maximum number of workspace files CheapSeek will include in a workspace question.
 
 Default:
 
+```text
 20
+```
 
 This prevents workspace mode from sending too many files at once.
 
-cheapseek.maxTotalWorkspaceChars
+### `cheapseek.maxTotalWorkspaceChars`
 
 The maximum total number of characters CheapSeek will send for workspace context.
 
 Default:
 
+```text
 80000
+```
 
 This keeps workspace prompts bounded so local models can still respond reliably.
 
-Hardware Guide
+---
+
+## Hardware Guide
 
 Local model performance depends heavily on available RAM, VRAM, CPU, and whether the model is running on GPU or CPU.
 
 These are rough guidelines, not strict requirements.
 
-deepseek-r1:1.5b
+### `deepseek-r1:1.5b`
 
 Recommended RAM:
 
+```text
 8 GB+
+```
 
 Best for:
 
+```text
 Low-end laptops, quick questions, and small files
+```
 
 Notes:
 
+```text
 Fastest option, but weaker reasoning.
-deepseek-r1:7b
+```
+
+### `deepseek-r1:7b`
 
 Recommended RAM:
 
+```text
 16 GB+
+```
 
 Best for:
 
+```text
 General local coding help, current-file questions, and selected-code explanations
+```
 
 Notes:
 
+```text
 Good balance of speed and quality.
-deepseek-r1:14b
+```
+
+### `deepseek-r1:14b`
 
 Recommended RAM:
 
+```text
 32 GB+
+```
 
 Best for:
 
+```text
 Deeper code review, larger files, and better reasoning
+```
 
 Notes:
 
+```text
 Slower than 7B and may feel heavy on laptops.
-deepseek-r1:32b
+```
+
+### `deepseek-r1:32b`
 
 Recommended RAM:
 
+```text
 64 GB+
+```
 
 Best for:
 
+```text
 Stronger local reasoning and more complex workspace analysis
+```
 
 Notes:
 
+```text
 Much slower without a strong GPU.
+```
 
-CheapSeek was built with the deepseek-r1 model line in mind, but it can run with other Ollama-compatible models.
+CheapSeek was built with the `deepseek-r1` model line in mind, but it can run with other Ollama-compatible models.
 
-Commands
+---
+
+## Commands
 
 CheapSeek currently provides the following commands:
 
+```text
 CheapSeek: Open Chat Panel
 CheapSeek: Ask About Current File
 CheapSeek: Clear Output
-CheapSeek: Open Chat Panel
+```
+
+### `CheapSeek: Open Chat Panel`
 
 Opens the CheapSeek webview chat panel.
 
 From this panel, users can:
 
+```text
 Ask about the current file
 Ask about the workspace
 Switch between context modes
@@ -247,20 +325,25 @@ Start a new chat session
 Switch between previous chat sessions
 Refresh editor/workspace context
 Refresh chat history
-CheapSeek: Ask About Current File
+```
+
+### `CheapSeek: Ask About Current File`
 
 Prompts for a question through the VS Code command palette and displays the response in the CheapSeek output panel.
 
-CheapSeek: Clear Output
+### `CheapSeek: Clear Output`
 
 Clears the CheapSeek output panel.
 
-Chat Panel
+---
+
+## Chat Panel
 
 The main CheapSeek interface is the webview chat panel.
 
 It includes:
 
+```text
 Current Context
   Shows the current workspace, active file, and selected model.
 
@@ -278,7 +361,11 @@ Response
 
 Chat History
   Shows previous questions and replies for the active chat session.
-Chat Sessions and Memory
+```
+
+---
+
+## Chat Sessions and Memory
 
 CheapSeek stores chat history locally using VS Code workspace storage.
 
@@ -288,29 +375,36 @@ CheapSeek supports multiple chat sessions.
 
 This allows users to start a fresh chat when:
 
+```text
 The current conversation gets too large
 The model starts overusing old context
 The user switches tasks
 The user wants a clean prompt history
+```
 
 Only the currently active chat session is included in future prompts.
 
 By default, each session keeps a bounded number of recent turns so prompts do not grow forever.
 
-Workspace Mode
+---
+
+## Workspace Mode
 
 Workspace mode lets CheapSeek answer questions using multiple files from the current VS Code workspace.
 
 CheapSeek intentionally limits workspace context using:
 
+```text
 cheapseek.maxWorkspaceFiles
 cheapseek.maxCharsPerFile
 cheapseek.maxTotalWorkspaceChars
+```
 
 This keeps workspace prompts small enough for local models and modest hardware.
 
 Workspace mode excludes common generated or dependency folders such as:
 
+```text
 node_modules
 dist
 out
@@ -323,42 +417,66 @@ bin
 obj
 target
 coverage
+```
 
 Workspace mode is currently a bounded context feature, not a full semantic index. Larger projects may need future chunking, summarization, or embeddings.
 
-Development
-1. Install dependencies
+---
+
+## Development
+
+### 1. Install dependencies
+
+```bash
 npm install
-2. Compile
+```
+
+### 2. Compile
+
+```bash
 npm run compile
-3. Watch mode
+```
+
+### 3. Watch mode
+
+```bash
 npm run watch
-4. Run the extension
+```
+
+### 4. Run the extension
 
 Open this project in VS Code.
 
 Then:
 
-Open the Run and Debug panel.
-Select Run Extension.
-Press the green play button.
+1. Open the **Run and Debug** panel.
+2. Select **Run Extension**.
+3. Press the green play button.
 
-This opens a new Extension Development Host window.
+This opens a new **Extension Development Host** window.
 
-5. Run CheapSeek
+### 5. Run CheapSeek
 
 In the Extension Development Host window, run:
 
+```text
 CheapSeek: Open Chat Panel
+```
 
 Then ask a question in either:
 
+```text
 Current File mode
 Workspace mode
-Project Structure
+```
+
+---
+
+## Project Structure
 
 Current structure:
 
+```text
 src/
   extension.ts
   types.ts
@@ -380,12 +498,15 @@ src/
 
   test/
     extension.test.ts
-extension.ts
+```
+
+### `extension.ts`
 
 Main VS Code extension entry point.
 
 Handles:
 
+```text
 Command registration
 Webview creation
 Message routing
@@ -394,23 +515,29 @@ Workspace questions
 Chat session switching
 Chat history updates
 Output panel command support
-types.ts
+```
+
+### `types.ts`
 
 Shared TypeScript interfaces.
 
-agent/
+### `agent/`
 
 Handles prompt construction and Ollama communication.
 
+```text
 ollamaClient.ts
   Sends chat requests to the configured Ollama endpoint.
 
 prompts.ts
   Builds current-file and workspace prompts.
-documents/
+```
+
+### `documents/`
 
 Handles VS Code document and workspace context collection.
 
+```text
 activeDocument.ts
   Finds the active or most recently active editor document.
 
@@ -419,22 +546,33 @@ filePayload.ts
 
 workspacePayload.ts
   Collects bounded workspace file payloads.
-memory/
+```
+
+### `memory/`
 
 Handles local chat history and chat sessions.
 
+```text
 chatHistory.ts
   Stores chat sessions, active session ID, and recent chat turns in workspaceState.
-ui/
+```
+
+### `ui/`
 
 Handles the CheapSeek webview.
 
+```text
 chatWebview.ts
   Returns the HTML, CSS, and JavaScript for the CheapSeek chat panel.
-Architecture
+```
+
+---
+
+## Architecture
 
 CheapSeek is designed around a simple local-first pipeline:
 
+```text
 VS Code command or webview action
   -> collect current file or workspace context
   -> collect active chat session history
@@ -442,62 +580,72 @@ VS Code command or webview action
   -> send request to local Ollama model
   -> show answer in VS Code
   -> save answer to active chat session
+```
 
 The architecture is split into six layers:
 
-Command Layer
+### Command Layer
 
 Determines what the user asked CheapSeek to do.
 
 Examples:
 
+```text
 Open chat panel
 Ask about current file
 Ask about workspace
 Clear output
-Document Layer
+```
+
+### Document Layer
 
 Determines which files, selections, or workspace content should be included.
 
-Context Layer
+### Context Layer
 
 Controls how much code and history should be sent to the model.
 
-Agent Layer
+### Agent Layer
 
 Handles communication with the local LLM through the Ollama API.
 
-UI Layer
+### UI Layer
 
 Controls how answers, chat sessions, and history are displayed inside VS Code.
 
-Memory Layer
+### Memory Layer
 
 Stores chat sessions and recent chat history locally through VS Code workspace storage.
 
-Local-First Goal
+---
+
+## Local-First Goal
 
 CheapSeek Native is intended to keep source code local.
 
 The extension sends code context only to the configured local endpoint. By default, this is Ollama running on:
 
+```text
 localhost:11434
+```
 
 No cloud API is required for the default setup.
 
 Chat history is also stored locally in VS Code workspace storage.
 
-CheapSeek Native vs CheapSeek Containerized
+---
+
+## CheapSeek Native vs CheapSeek Containerized
 
 CheapSeek is planned to have two local-first deployment options:
 
-CheapSeek Native
+### CheapSeek Native
 
 Runs against an Ollama server installed directly on the host machine.
 
 This version is best if you already use Ollama locally or want full control over your Ollama installation.
 
-CheapSeek Containerized
+### CheapSeek Containerized
 
 Runs against an Ollama server inside a Docker container.
 
@@ -505,7 +653,9 @@ This version is intended to make setup more portable and reproducible while stil
 
 Both versions communicate with Ollama through the Ollama API.
 
-Notes
+---
+
+## Notes
 
 This project started as a simple TODO/FIXME scanner to learn how VS Code extensions interact with file data, diagnostics, and output panels.
 
