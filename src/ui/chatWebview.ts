@@ -71,6 +71,15 @@ export function getChatWebviewHtml(): string {
 			background-color: var(--vscode-button-hoverBackground);
 		}
 
+		button:disabled {
+			opacity: 0.65;
+			cursor: not-allowed;
+		}
+
+		button:disabled:hover {
+			background-color: var(--vscode-button-background);
+		}
+
 		button.secondary {
 			color: var(--vscode-button-secondaryForeground);
 			background-color: var(--vscode-button-secondaryBackground);
@@ -228,6 +237,12 @@ export function getChatWebviewHtml(): string {
 			border-radius: 4px;
 		}
 
+		.model-details {
+			margin-top: 8px;
+			font-size: 12px;
+			color: var(--vscode-descriptionForeground);
+			line-height: 1.4;
+		}
 	</style>
 </head>
 <body>
@@ -250,6 +265,23 @@ export function getChatWebviewHtml(): string {
 	</div>
 
 	<div class="card">
+		<div class="history-header">
+			<div>
+				<div class="context-title">Model</div>
+				<div class="history-subtitle">Choose an installed Ollama model.</div>
+			</div>
+
+			<button id="refreshModelsButton" class="secondary">Refresh Models</button>
+		</div>
+
+		<select id="modelSelect" class="chat-select">
+			<option value="">Loading models...</option>
+		</select>
+
+		<div id="modelDetails" class="model-details">Model details not loaded yet.</div>
+	</div>
+
+	<div class="card">
 		<div class="mode-row">
 			<span class="mode-label">Context</span>
 
@@ -263,7 +295,6 @@ export function getChatWebviewHtml(): string {
 				Workspace
 			</label>
 		</div>
-
 
 		<div class="card">
 			<div class="history-header">
@@ -303,7 +334,6 @@ export function getChatWebviewHtml(): string {
 			</div>
 
 			<button id="refreshHistoryButton" class="secondary">Refresh History</button>
-			
 		</div>
 
 		<div id="historyList" class="history-list">
@@ -328,6 +358,16 @@ export function getChatWebviewHtml(): string {
 		const refreshHistoryButton = document.getElementById('refreshHistoryButton');
 		const newChatButton = document.getElementById('newChatButton');
 		const chatSessionSelect = document.getElementById('chatSessionSelect');
+		const modelSelect = document.getElementById('modelSelect');
+		const modelDetails = document.getElementById('modelDetails');
+		const refreshModelsButton = document.getElementById('refreshModelsButton');
+
+		let installedModels = [];
+
+		function setAskInProgress(isInProgress) {
+			askButton.disabled = isInProgress;
+			askButton.textContent = isInProgress ? 'Thinking...' : 'Ask CheapSeek';
+		}
 
 		function getSelectedMode() {
 			const selectedInput = document.querySelector('input[name="askMode"]:checked');
@@ -418,20 +458,140 @@ export function getChatWebviewHtml(): string {
 			});
 		}
 
+		function formatBytes(bytes) {
+			if (!bytes || Number.isNaN(Number(bytes))) {
+				return 'Unknown size';
+			}
+
+			const gb = Number(bytes) / 1024 / 1024 / 1024;
+
+			if (gb >= 1) {
+				return gb.toFixed(2) + ' GB';
+			}
+
+			const mb = Number(bytes) / 1024 / 1024;
+			return mb.toFixed(2) + ' MB';
+		}
+
+		function getModelLabel(model) {
+			const name = model.name || model.model || 'Unknown model';
+			const size = formatBytes(model.size);
+
+			const parameterSize = model.details && model.details.parameter_size
+				? model.details.parameter_size
+				: '';
+
+			const quantization = model.details && model.details.quantization_level
+				? model.details.quantization_level
+				: '';
+
+			let label = name + ' - ' + size;
+
+			if (parameterSize) {
+				label += ' - ' + parameterSize;
+			}
+
+			if (quantization) {
+				label += ' - ' + quantization;
+			}
+
+			return label;
+		}
+
+		function renderSelectedModelDetails(model) {
+			if (!model) {
+				modelDetails.textContent = 'Model details not loaded yet.';
+				return;
+			}
+
+			const name = model.name || model.model || 'Unknown model';
+			const size = formatBytes(model.size);
+			const family = model.details && model.details.family ? model.details.family : 'Unknown family';
+			const parameterSize = model.details && model.details.parameter_size ? model.details.parameter_size : 'Unknown params';
+			const quantization = model.details && model.details.quantization_level ? model.details.quantization_level : 'Unknown quantization';
+
+			modelDetails.textContent =
+				'Selected: ' + name +
+				' | Size: ' + size +
+				' | Family: ' + family +
+				' | Params: ' + parameterSize +
+				' | Quant: ' + quantization;
+		}
+
+		function renderModels(models, currentModel) {
+			clearElement(modelSelect);
+
+			if (!Array.isArray(models) || models.length === 0) {
+				const option = document.createElement('option');
+				option.value = '';
+				option.textContent = 'No Ollama models found';
+				modelSelect.appendChild(option);
+				modelDetails.textContent = 'No installed Ollama models were found. Try running ollama pull deepseek-r1:7b.';
+				return;
+			}
+
+			models.forEach((model) => {
+				const option = document.createElement('option');
+				const modelName = model.name || model.model;
+
+				option.value = modelName;
+				option.textContent = getModelLabel(model);
+
+				if (modelName === currentModel) {
+					option.selected = true;
+				}
+
+				modelSelect.appendChild(option);
+			});
+
+			const selectedModel = models.find((model) => {
+				const modelName = model.name || model.model;
+				return modelName === currentModel;
+			}) || models[0];
+
+			renderSelectedModelDetails(selectedModel);
+		}
+
 		document.querySelectorAll('input[name="askMode"]').forEach((input) => {
 			input.addEventListener('change', updatePlaceholderForMode);
 		});
 
+		refreshModelsButton.addEventListener('click', () => {
+			modelDetails.textContent = 'Refreshing installed models...';
+
+			vscode.postMessage({
+				command: 'refreshModels',
+			});
+		});
+
+		modelSelect.addEventListener('change', () => {
+			const modelName = modelSelect.value;
+
+			if (!modelName) {
+				return;
+			}
+
+			const selectedModel = installedModels.find((model) => {
+				const candidateName = model.name || model.model;
+				return candidateName === modelName;
+			});
+
+			renderSelectedModelDetails(selectedModel);
+
+			vscode.postMessage({
+				command: 'switchModel',
+				modelName,
+			});
+		});
+
 		clearButton.addEventListener('click', () => {
+			setAskInProgress(false);
+
 			question.value = '';
 			status.textContent = 'Ready.';
 			status.className = 'status';
 			meta.textContent = '';
 			answer.textContent = 'Ask a question to get started.';
-
-			workspaceContext.textContent = 'Workspace: Not loaded yet';
-			fileContext.textContent = 'File: Not loaded yet';
-			modelContext.textContent = 'Model: Not loaded yet';
 
 			vscode.postMessage({
 				command: 'clear',
@@ -454,6 +614,8 @@ export function getChatWebviewHtml(): string {
 		});
 
 		newChatButton.addEventListener('click', () => {
+			setAskInProgress(false);
+
 			vscode.postMessage({
 				command: 'newChatSession',
 			});
@@ -466,6 +628,8 @@ export function getChatWebviewHtml(): string {
 				return;
 			}
 
+			setAskInProgress(false);
+
 			vscode.postMessage({
 				command: 'switchChatSession',
 				sessionId,
@@ -473,6 +637,10 @@ export function getChatWebviewHtml(): string {
 		});
 
 		askButton.addEventListener('click', () => {
+			if (askButton.disabled) {
+				return;
+			}
+
 			const text = question.value.trim();
 
 			if (!text) {
@@ -495,6 +663,8 @@ export function getChatWebviewHtml(): string {
 				? 'Collecting workspace context and thinking locally...'
 				: 'Thinking locally...';
 
+			setAskInProgress(true);
+
 			vscode.postMessage({
 				command,
 				question: text,
@@ -504,11 +674,27 @@ export function getChatWebviewHtml(): string {
 		window.addEventListener('message', event => {
 			const message = event.data;
 
+			if (message.command === 'models') {
+				installedModels = Array.isArray(message.models) ? message.models : [];
+				renderModels(installedModels, message.currentModel);
+			}
+
+			if (message.command === 'modelsError') {
+				modelDetails.textContent = 'Could not load Ollama models: ' + message.text;
+			}
+
+			if (message.command === 'modelChanged') {
+				status.textContent = 'Model changed to ' + message.model + '.';
+				status.className = 'status';
+				modelContext.textContent = 'Model: ' + message.model;
+			}
+
 			if (message.command === 'chatSessions') {
 				renderChatSessions(message.sessions, message.activeSessionId);
 			}
 
 			if (message.command === 'clearAnswerOnly') {
+				setAskInProgress(false);
 				status.textContent = 'Ready.';
 				status.className = 'status';
 				meta.textContent = '';
@@ -524,11 +710,15 @@ export function getChatWebviewHtml(): string {
 				fileContext.textContent = 'File: ' + (message.file || 'Unknown');
 				modelContext.textContent = 'Model: ' + (message.model || 'Unknown');
 
-				status.textContent = 'Ready.';
-				status.className = 'status';
+				if (!askButton.disabled) {
+					status.textContent = 'Ready.';
+					status.className = 'status';
+				}
 			}
 
 			if (message.command === 'thinking') {
+				setAskInProgress(true);
+
 				status.textContent = message.text;
 				status.className = 'status';
 				meta.textContent = '';
@@ -541,6 +731,8 @@ export function getChatWebviewHtml(): string {
 			}
 
 			if (message.command === 'answer') {
+				setAskInProgress(false);
+
 				status.textContent = 'Done.';
 				status.className = 'status';
 
@@ -553,20 +745,20 @@ export function getChatWebviewHtml(): string {
 			}
 
 			if (message.command === 'error') {
+				setAskInProgress(false);
+
 				status.textContent = 'Error.';
 				status.className = 'status error';
 				answer.textContent = message.text;
 			}
 
 			if (message.command === 'clear') {
+				setAskInProgress(false);
+
 				status.textContent = 'Ready.';
 				status.className = 'status';
 				meta.textContent = '';
 				answer.textContent = 'Ask a question to get started.';
-
-				workspaceContext.textContent = 'Workspace: Not loaded yet';
-				fileContext.textContent = 'File: Not loaded yet';
-				modelContext.textContent = 'Model: Not loaded yet';
 			}
 		});
 

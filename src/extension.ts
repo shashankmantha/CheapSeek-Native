@@ -6,6 +6,7 @@ import { getActiveDocument, getWorkspaceName } from './documents/activeDocument'
 import { createFilePayload } from './documents/filePayload';
 import { createWorkspacePayloads, getWorkspaceRootName } from './documents/workspacePayload';
 import { getChatWebviewHtml } from './ui/chatWebview';
+import { listOllamaModels } from './agent/ollamaModels';
 
 import {
 	addChatTurn,
@@ -97,6 +98,28 @@ export function activate(context: vscode.ExtensionContext) {
 				});
 			};
 
+			const postInstalledModels = async () => {
+				const config = vscode.workspace.getConfiguration('cheapseek');
+				const endpoint = config.get<string>('modelEndpoint', 'http://localhost:11434/api/chat');
+				const currentModel = config.get<string>('modelName', 'deepseek-r1:7b');
+
+				try {
+					const models = await listOllamaModels(endpoint);
+
+					panel.webview.postMessage({
+						command: 'models',
+						models,
+						currentModel,
+					});
+				} catch (error) {
+					panel.webview.postMessage({
+						command: 'modelsError',
+						text: error instanceof Error ? error.message : String(error),
+						currentModel,
+					});
+				}
+			};
+
 			panel.webview.html = getChatWebviewHtml();
 
 			setTimeout(postCurrentContext, 100);
@@ -104,6 +127,10 @@ export function activate(context: vscode.ExtensionContext) {
 			setTimeout(postChatHistory, 150);
 
 			setTimeout(postChatSessions, 200);
+
+			setTimeout(() => {
+				void postInstalledModels();
+			}, 250);
 
 			panel.webview.onDidReceiveMessage(
 				async (message) => {
@@ -115,6 +142,41 @@ export function activate(context: vscode.ExtensionContext) {
 					if (message.command === 'refreshHistory') {
 						postChatHistory();
 						postChatSessions();
+						return;
+					}
+
+					if (message.command === 'refreshModels') {
+						await postInstalledModels();
+						return;
+					}
+
+					if (message.command === 'switchModel') {
+						const modelName = String(message.modelName ?? '').trim();
+
+						if (!modelName) {
+							panel.webview.postMessage({
+								command: 'error',
+								text: 'No model selected.',
+							});
+							return;
+						}
+
+						const config = vscode.workspace.getConfiguration('cheapseek');
+
+						await config.update(
+							'modelName',
+							modelName,
+							vscode.ConfigurationTarget.Workspace
+						);
+
+						postCurrentContext();
+						await postInstalledModels();
+
+						panel.webview.postMessage({
+							command: 'modelChanged',
+							model: modelName,
+						});
+
 						return;
 					}
 
